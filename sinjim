@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎮 لعبة سين جيم الجماعية - النسخة التلفزيونية</title>
+
+<!-- خط Cairo -->
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+body {
+  font-family: 'Cairo', sans-serif;
+  background: radial-gradient(circle at center, #240046, #3a0ca3, #7209b7);
+  color: #fff;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+h1, h2 {
+  text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+}
+button {
+  background: linear-gradient(90deg, #ffd700, #ffb703);
+  color: #2d0068;
+  border: none;
+  padding: 15px 25px;
+  margin: 10px;
+  border-radius: 12px;
+  font-size: 1.4em;
+  cursor: pointer;
+  transition: 0.3s;
+  font-weight: bold;
+}
+button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px #ffd700;
+}
+.container {
+  background: rgba(255,255,255,0.08);
+  margin: 30px auto;
+  padding: 25px;
+  border-radius: 20px;
+  width: 85%;
+  max-width: 900px;
+  box-shadow: 0 4px 30px rgba(255,215,0,0.3);
+  animation: fadeIn 1s ease;
+}
+@keyframes fadeIn {
+  from {opacity: 0; transform: scale(0.92);}
+  to {opacity: 1; transform: scale(1);}
+}
+.team-box {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.team {
+  border-radius: 15px;
+  padding: 10px 20px;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.2em;
+}
+.team.blue {background:#0077b6;}
+.team.red {background:#d90429;}
+.team.green {background:#2a9d8f;}
+.team.yellow {background:#f4a261;}
+.answer {display:none;font-size:2em;margin-top:20px;}
+.score {font-size:1.8em;margin:15px;color:#ffff99;}
+.timer {font-size:2.2em;color:#ffd700;margin-top:10px;}
+.timeout {color:#ff4444;font-weight:bold;}
+#welcome, #setup, #result {
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+}
+#welcome h1 {
+  font-size:3em;
+  color:#ffd700;
+  text-shadow:0 0 25px #ffbe0b;
+}
+#welcome button {
+  font-size:1.5em;
+  padding:20px 40px;
+}
+input {
+  font-size:1.3em;
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  margin:10px;
+  text-align:center;
+}
+.fade-question {
+  animation: fadeQuestion 1s ease;
+}
+@keyframes fadeQuestion {
+  from {opacity:0; transform:scale(0.95);}
+  to {opacity:1; transform:scale(1);}
+}
+.question-glow {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+@keyframes glow {
+  from {text-shadow: 0 0 10px #ffd700;}
+  to {text-shadow: 0 0 25px #fff, 0 0 40px #ffd700;}
+}
+</style>
+</head>
+
+<body>
+
+<!-- شاشة الترحيب -->
+<div id="welcome">
+  <h1>🎤 أهلاً بك في لعبة سين جيم الجماعية 🎮</h1>
+  <h3>اختبر معلوماتك وفريقك</h3>
+  <button onclick="showSetup()">ابدأ اللعبة 🚀</button>
+</div>
+
+<!-- إعداد الفرق -->
+<div id="setup" style="display:none;">
+  <h2>كم عدد الفرق المشاركة؟</h2>
+  <div>
+    <button onclick="selectTeams(2)">فريقان</button>
+    <button onclick="selectTeams(3)">ثلاثة فرق</button>
+    <button onclick="selectTeams(4)">أربعة فرق</button>
+  </div>
+  <div id="teamNames" style="margin-top:20px;"></div>
+</div>
+
+<!-- منطقة اللعبة -->
+<div id="game" style="display:none;">
+  <h1>🏆 لعبة سين جيم</h1>
+  <div class="team-box" id="scoreboard"></div>
+  <div class="timer">⏱️ الوقت المتبقي: <span id="time">10</span> ثانية</div>
+
+  <div class="container">
+    <h2 id="turn"></h2>
+    <h2 id="question" class="fade-question question-glow">اضغط "السؤال التالي" لبدء اللعبة!</h2>
+    <div id="answer" class="answer"></div>
+
+    <button onclick="showAnswer()">💡 إظهار الإجابة</button>
+    <button onclick="correctAnswer()">✅ إجابة صحيحة</button>
+    <button onclick="wrongAnswer()">❌ إجابة خاطئة</button>
+  <!-- <button onclick="nextQuestion()">⏭️ تغير السؤال</button> -->
+
+  </div>
+
+  <div id="result" style="display:none;"></div>
+</div>
+
+<!-- الأصوات -->
+
+<audio id="soundStart" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+<audio id="soundAnswer" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="soundCorrect" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+<audio id="soundWrong" src="https://actions.google.com/sounds/v1/cartoon/boing.ogg"></audio>
+<audio id="soundWin" src="https://actions.google.com/sounds/v1/ambiences/large_crowd_cheer.ogg"></audio>
+
+
+
+
+
+<!-- الأسئلة -->
+<script id="questionData" type="application/json">
+[
+{"category":"ثقافة عامة","q":"ما هو أكبر كوكب في المجموعة الشمسية؟","a":"المشتري"},
+{"category":"علوم","q":"ما هو العنصر الكيميائي الذي رمزه O؟","a":"الأكسجين"},
+{"category":"تاريخ","q":"من أول من صعد إلى سطح القمر؟","a":"نيل آرمسترونغ"},
+{"category":"دين","q":"كم عدد أركان الإسلام؟","a":"خمسة"},
+{"category":"رياضة","q":"كم عدد اللاعبين في فريق كرة القدم؟","a":"11 لاعباً"},
+{"category":"علوم","q":"ما هو الكوكب الأحمر؟","a":"المريخ"},
+{"category":"ثقافة عامة","q":"ما هي عاصمة اليابان؟","a":"طوكيو"},
+{"category":"دين","q":"من النبي الذي ابتلعه الحوت؟","a":"يونس عليه السلام"},
+{"category":"تاريخ","q":"من أول الخلفاء الراشدين؟","a":"أبو بكر الصديق"},
+{"category":"ثقافة عامة","q":"ما هو الحيوان الذي يُلقب بملك الغابة؟","a":"الأسد"},
+{"category":"رياضة","q":"من هو أسرع عداء في العالم؟","a":"يوسين بولت"},
+{"category":"تاريخ","q":"في أي عام بدأت الحرب العالمية الثانية؟","a":"عام 1939"},
+{"category":"علوم","q":"كم عدد كواكب المجموعة الشمسية؟","a":"ثمانية"},
+{"category":"دين","q":"كم عدد ركعات صلاة الفجر؟","a":"ركعتان"},
+{"category":"ثقافة عامة","q":"من هو مؤلف رواية هاري بوتر؟","a":"جي كي رولينغ"},
+{"category":"علوم","q":"ما هو الجهاز المسؤول عن ضخ الدم في جسم الإنسان؟","a":"القلب"},
+{"category":"تاريخ","q":"من اكتشف أمريكا؟","a":"كريستوفر كولومبوس"},
+{"category":"دين","q":"من هو خاتم الأنبياء؟","a":"محمد ﷺ"},
+{"category":"علوم","q":"ما هو الغاز الذي يتنفسه الإنسان؟","a":"الأكسجين"},
+{"category":"ثقافة عامة","q":"ما هي عاصمة فرنسا؟","a":"باريس"},
+{"category":"دين","q":"كم عدد الصلوات المفروضة في اليوم؟","a":"خمس صلوات"},
+{"category":"تاريخ","q":"من أول من استخدم الورق؟","a":"الصينيون"},
+{"category":"ثقافة عامة","q":"ما هو أطول نهر في العالم؟","a":"نهر النيل"},
+{"category":"رياضة","q":"في أي دولة أُقيمت أولمبياد 2016؟","a":"البرازيل"},
+{"category":"علوم","q":"ما هو العنصر الذي يرمز له بـH؟","a":"الهيدروجين"},
+{"category":"ثقافة عامة","q":"ما هو أطول سور في العالم؟","a":"سور الصين العظيم"},
+{"category":"دين","q":"من النبي الذي بُعث إلى فرعون؟","a":"موسى عليه السلام"},
+{"category":"تاريخ","q":"أين وُلد صلاح الدين الأيوبي؟","a":"تكريت - العراق"},
+{"category":"ثقافة عامة","q":"كم عدد ألوان قوس قزح؟","a":"سبعة"},
+{"category":"علوم","q":"ما اسم عاصمة كندا؟","a":"أوتاوا"},
+{"category":"تاريخ","q":"من اكتشف قوانين الجاذبية؟","a":"إسحاق نيوتن"},
+{"category":"دين","q":"ما أول سورة في القرآن الكريم؟","a":"سورة الفاتحة"},
+{"category":"ثقافة عامة","q":"من هو الشاعر الجاهلي صاحب المعلقة المشهورة؟","a":"امرؤ القيس"},
+{"category":"علوم","q":"كم عدد خلايا جسم الإنسان تقريبًا؟","a":"حوالي 37 تريليون خلية"},
+{"category":"دين","q":"من أول من بنى الكعبة؟","a":"إبراهيم وإسماعيل عليهما السلام"},
+{"category":"ثقافة عامة","q":"ما هي عاصمة تركيا؟","a":"أنقرة"},
+{"category":"علوم","q":"ما اسم الكوكب الأقرب إلى الشمس؟","a":"عطارد"},
+{"category":"تاريخ","q":"من اكتشف البنسلين؟","a":"ألكسندر فليمنغ"},
+{"category":"ثقافة عامة","q":"ما اسم البحر الذي يفصل بين السعودية والسودان؟","a":"البحر الأحمر"},
+{"category":"دين","q":"كم عدد سور القرآن الكريم؟","a":"114 سورة"},
+{"category":"رياضة","q":"كم دقيقة في شوط كرة القدم الواحد؟","a":"45 دقيقة"},
+{"category":"علوم","q":"ما هو أكبر عضو في جسم الإنسان؟","a":"الجلد"},
+{"category":"تاريخ","q":"من أول من صعد قمة إيفرست؟","a":"إدموند هيلاري"},
+{"category":"ثقافة عامة","q":"ما هو الذهب الأسود؟","a":"النفط"},
+{"category":"دين","q":"ما هو أول مسجد بُني في الإسلام؟","a":"مسجد قباء"},
+{"category":"ثقافة عامة","q":"من هو العالم الذي اخترع المصباح الكهربائي؟","a":"توماس إديسون"},
+{"category":"علوم","q":"ما اسم العملية التي ينتج بها النبات غذاءه؟","a":"التمثيل الضوئي"},
+{"category":"ثقافة عامة","q":"من هو أول إنسان خلقه الله؟","a":"آدم عليه السلام"},
+{"category":"ثقافة عامة","q":"كم عدد حروف اللغة العربية؟","a":"28 حرفًا"},
+{"category":"دين","q":"من أول من أسلم من النساء؟","a":"خديجة بنت خويلد رضي الله عنها"}
+]
+</script>
+
+<script>
+let questions = [];
+let current = -1;
+let timeLeft = 10;
+let timer;
+let teams = [];
+let currentTeam = 0;
+
+function playSound(id) {
+  const s = document.getElementById(id);
+  s.currentTime = 0;
+  s.play();
+}
+
+function showSetup() {
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('setup').style.display = 'flex';
+}
+
+function selectTeams(n) {
+  const box = document.getElementById('teamNames');
+  box.innerHTML = "";
+  for (let i = 1; i <= n; i++) {
+    box.innerHTML += `<div><input id="team${i}" placeholder="اسم الفريق ${i}" /></div>`;
+  }
+  box.innerHTML += `<button onclick="startGame(${n})">ابدأ اللعبة 🎮</button>`;
+}
+
+function startGame(n) {
+  teams = [];
+  for (let i = 1; i <= n; i++) {
+    let name = document.getElementById('team' + i).value || ("الفريق " + i);
+    teams.push({ name: name, score: 0 });
+  }
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('game').style.display = 'block';
+  renderTeams();
+  const data = document.getElementById('questionData').textContent;
+  questions = JSON.parse(data);
+  questions = questions.sort(() => Math.random() - 0.5);
+  nextQuestion();
+}
+
+function renderTeams() {
+  const sb = document.getElementById('scoreboard');
+  sb.innerHTML = "";
+  const colors = ["blue", "red", "green", "yellow"];
+  teams.forEach((t, i) => {
+    sb.innerHTML += `<div class="team ${colors[i]}">${t.name}: <span id="score${i}">0</span></div>`;
+  });
+}
+
+function updateScores() {
+  teams.forEach((t, i) => {
+    document.getElementById("score" + i).innerText = t.score;
+  });
+}
+
+function showAnswer() {
+  playSound("soundAnswer");
+  document.getElementById("answer").style.display = "block";
+}
+
+function correctAnswer() {
+  playSound("soundCorrect");
+  teams[currentTeam].score++;
+  updateScores();
+  // عرض مؤثر بسيط قبل الانتقال للسؤال التالي
+  document.getElementById("question").innerHTML += "<br>✅ إجابة صحيحة!";
+  setTimeout(() => {
+    nextTurn();
+    nextQuestion();
+  }, 1200); // بعد 1.2 ثانية ينتقل للسؤال التالي
+}
+
+function wrongAnswer() {
+  playSound("soundWrong");
+  document.getElementById("question").innerHTML += "<br>❌ إجابة خاطئة!";
+  setTimeout(() => {
+    nextTurn();
+    nextQuestion();
+  }, 1200); // بعد 1.2 ثانية ينتقل للسؤال التالي
+}
+
+
+function nextTurn() {
+  currentTeam = (currentTeam + 1) % teams.length;
+}
+
+function nextQuestion() {
+  clearInterval(timer);
+  current++;
+  if (current >= 50 || current >= questions.length) {
+    showResult();
+    return;
+  }
+  let q = questions[current];
+  const qElem = document.getElementById("question");
+  qElem.classList.remove("fade-question");
+  void qElem.offsetWidth;
+  qElem.classList.add("fade-question");
+  qElem.innerText = `[${q.category}] ${q.q}`;
+  document.getElementById("answer").innerText = "الإجابة: " + q.a;
+  document.getElementById("answer").style.display = "none";
+  document.getElementById("turn").innerHTML = `🎯 دور <strong>${teams[currentTeam].name}</strong>`;
+  timeLeft = 10;
+  document.getElementById("time").innerText = timeLeft;
+  document.getElementById("time").classList.remove("timeout");
+  playSound("soundStart");
+  startTimer();
+}
+
+function startTimer() {
+  timer = setInterval(() => {
+    timeLeft--;
+    document.getElementById("time").innerText = timeLeft;
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      document.getElementById("time").classList.add("timeout");
+      document.getElementById("question").innerHTML = "⏰ انتهى الوقت!<br>" + questions[current].q;
+      document.getElementById("answer").style.display = "block";
+      nextTurn();
+    }
+  }, 1000);
+}
+
+function showResult() {
+  clearInterval(timer);
+  let sorted = [...teams].sort((a, b) => b.score - a.score);
+  let winner = sorted[0];
+
+  document.getElementById("result").style.display = "block";
+  document.getElementById("result").innerHTML =
+    `<div style='font-size:2.5em;color:#ffd700;text-shadow:0 0 30px #ffb703;animation:fadeIn 1.5s ease;'>🥇 الفائز هو <strong>${winner.name}</strong> بـ ${winner.score} نقطة!</div><br>
+    <div style='margin-top:15px;font-size:1.5em;'>
+      ${sorted.map(t => `${t.name}: ${t.score} نقطة`).join("<br>")}
+    </div>
+    <br><br>
+    <button onclick="location.reload()">🔁 إعادة اللعب</button>`;
+
+  // 🎵 تشغيل صوت الفوز الطويل
+  playSound("soundWin");
+
+  // ✨ وميض ذهبي خفيف عند الفوز
+  document.body.style.background = "radial-gradient(circle, #ffd700, #7209b7, #240046)";
+  setTimeout(() => {
+    document.body.style.background = "radial-gradient(circle at center, #240046, #3a0ca3, #7209b7)";
+  }, 5000);
+}
+
+</script>
+</body>
+</html>
+
