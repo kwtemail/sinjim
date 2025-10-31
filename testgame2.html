@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎮 لعبة سين جيم الجماعية - النسخة التلفزيونية</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+body {
+  font-family: 'Cairo', sans-serif;
+  background: radial-gradient(circle at center, #240046, #3a0ca3, #7209b7);
+  color: #fff;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+h1, h2 { text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
+button {
+  background: linear-gradient(90deg, #ffd700, #ffb703);
+  color: #2d0068;
+  border: none;
+  padding: 15px 25px;
+  margin: 10px;
+  border-radius: 12px;
+  font-size: 1.4em;
+  cursor: pointer;
+  transition: 0.3s;
+  font-weight: bold;
+}
+button:hover { transform: scale(1.05); box-shadow: 0 0 15px #ffd700; }
+.container {
+  background: rgba(255,255,255,0.08);
+  margin: 30px auto;
+  padding: 25px;
+  border-radius: 20px;
+  width: 85%;
+  max-width: 900px;
+  box-shadow: 0 4px 30px rgba(255,215,0,0.3);
+  animation: fadeIn 1s ease;
+}
+@keyframes fadeIn { from {opacity:0;transform:scale(0.92);} to {opacity:1;transform:scale(1);} }
+.team-box { display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-top:10px; }
+.team { border-radius:15px;padding:10px 20px;color:#fff;font-weight:bold;font-size:1.2em; }
+.team.blue {background:#0077b6;} .team.red {background:#d90429;}
+.team.green {background:#2a9d8f;} .team.yellow {background:#f4a261;}
+.answer {display:none;font-size:2em;margin-top:20px;}
+.score {font-size:1.8em;margin:15px;color:#ffff99;}
+.timer {font-size:2.2em;color:#ffd700;margin-top:10px;}
+.timeout {color:#ff4444;font-weight:bold;}
+#welcome,#setup,#result {height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;}
+#welcome h1 {font-size:3em;color:#ffd700;text-shadow:0 0 25px #ffbe0b;}
+#welcome button {font-size:1.5em;padding:20px 40px;}
+input {font-size:1.3em;padding:10px;border-radius:10px;border:none;margin:10px;text-align:center;}
+.fade-question {animation: fadeQuestion 1s ease;}
+@keyframes fadeQuestion {from {opacity:0;transform:scale(0.95);} to {opacity:1;transform:scale(1);}}
+.question-glow {animation: glow 2s ease-in-out infinite alternate;}
+@keyframes glow {from {text-shadow:0 0 10px #ffd700;} to {text-shadow:0 0 25px #fff,0 0 40px #ffd700;}}
+</style>
+</head>
+
+<body>
+
+<!-- شاشة الترحيب -->
+<div id="welcome">
+  <h1>🎤 أهلاً بك في لعبة سين جيم الجماعية 🎮</h1>
+  <h3>اختبر معلوماتك وفريقك!</h3>
+  <button onclick="showSetup()">ابدأ اللعبة 🚀</button>
+</div>
+
+<!-- إعداد الفرق -->
+<div id="setup" style="display:none;">
+  <h2>كم عدد الفرق المشاركة؟</h2>
+  <div>
+    <button onclick="selectTeams(2)">فريقان</button>
+    <button onclick="selectTeams(3)">ثلاثة فرق</button>
+    <button onclick="selectTeams(4)">أربعة فرق</button>
+  </div>
+  <div id="teamNames" style="margin-top:20px;"></div>
+</div>
+
+<!-- منطقة اللعبة -->
+<div id="game" style="display:none;">
+  <h1>🏆 لعبة سين جيم</h1>
+  <div class="team-box" id="scoreboard"></div>
+  <div class="timer">⏱️ الوقت المتبقي: <span id="time">10</span> ثانية</div>
+
+  <div class="container">
+    <h2 id="turn"></h2>
+    <h2 id="question" class="fade-question question-glow">اضغط "ابدأ اللعبة" لبدء الأسئلة!</h2>
+    <div id="answer" class="answer"></div>
+
+    <button onclick="showAnswer()">💡 إظهار الإجابة</button>
+    <button onclick="correctAnswer()">✅ إجابة صحيحة</button>
+    <button onclick="wrongAnswer()">❌ إجابة خاطئة</button>
+  </div>
+
+  <div id="result" style="display:none;"></div>
+</div>
+
+<!-- الأصوات -->
+<audio id="soundStart"  src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+<audio id="soundAnswer" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="soundCorrect" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+<audio id="soundWrong"  src="https://actions.google.com/sounds/v1/cartoon/boing.ogg"></audio>
+<audio id="soundWin"    src="https://actions.google.com/sounds/v1/ambiences/large_crowd_cheer.ogg"></audio>
+
+<!-- الأسئلة -->
+<script id="questionData" type="application/json">
+[
+{"category":"ثقافة عامة","q":"ما هو أكبر كوكب في المجموعة الشمسية؟","a":"المشتري"},
+{"category":"علوم","q":"ما هو العنصر الكيميائي الذي رمزه O؟","a":"الأكسجين"},
+{"category":"تاريخ","q":"من أول من صعد إلى سطح القمر؟","a":"نيل آرمسترونغ"},
+{"category":"دين","q":"كم عدد أركان الإسلام؟","a":"خمسة"},
+{"category":"رياضة","q":"كم عدد اللاعبين في فريق كرة القدم؟","a":"11 لاعباً"},
+{"category":"علوم","q":"ما هو الكوكب الأحمر؟","a":"المريخ"},
+{"category":"ثقافة عامة","q":"ما هي عاصمة اليابان؟","a":"طوكيو"},
+{"category":"دين","q":"من النبي الذي ابتلعه الحوت؟","a":"يونس عليه السلام"},
+{"category":"تاريخ","q":"من أول الخلفاء الراشدين؟","a":"أبو بكر الصديق"},
+{"category":"ثقافة عامة","q":"ما هو الحيوان الذي يُلقب بملك الغابة؟","a":"الأسد"}
+
+]
+</script>
+
+<!-- أسئلة الجولة الفاصلة -->
+<script id="tieBreakerData" type="application/json">
+[
+{"category":"جولة فاصلة","q":"كم عدد الدول العربية في قارة أفريقيا؟","a":"10 دول"},
+{"category":"جولة فاصلة","q":"ما هو اسم أكبر محيط في العالم؟","a":"المحيط الهادئ"},
+{"category":"جولة فاصلة","q":"من هو مخترع الهاتف؟","a":"ألكسندر غراهام بيل"},
+{"category":"جولة فاصلة","q":"كم عدد ألوان الطيف المرئي؟","a":"سبعة"}
+]
+</script>
+
+<!-- الكود البرمجي -->
+<script>
+let questions = [];
+let current = -1;
+let timeLeft = 10;
+let timer;
+let teams = [];
+let currentTeam = 0;
+
+function playSound(id){const s=document.getElementById(id);s.currentTime=0;s.play();}
+
+function showSetup(){
+  document.getElementById('welcome').style.display='none';
+  document.getElementById('setup').style.display='flex';
+}
+
+function selectTeams(n){
+  const box=document.getElementById('teamNames');
+  box.innerHTML="";
+  for(let i=1;i<=n;i++){
+    box.innerHTML+=`<div><input id="team${i}" placeholder="اسم الفريق ${i}" /></div>`;
+  }
+  box.innerHTML+=`<button onclick="startGame(${n})">ابدأ اللعبة 🎮</button>`;
+}
+
+function startGame(n){
+  teams=[];
+  for(let i=1;i<=n;i++){
+    let name=document.getElementById('team'+i).value||("الفريق "+i);
+    teams.push({name:name,score:0});
+  }
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game').style.display='block';
+  renderTeams();
+  const data=document.getElementById('questionData').textContent;
+  questions=JSON.parse(data).sort(()=>Math.random()-0.5);
+  nextQuestion();
+}
+
+function renderTeams(){
+  const sb=document.getElementById('scoreboard');
+  sb.innerHTML="";
+  const colors=["blue","red","green","yellow"];
+  teams.forEach((t,i)=>{
+    sb.innerHTML+=`<div class="team ${colors[i]}">${t.name}: <span id="score${i}">0</span></div>`;
+  });
+}
+
+function updateScores(){
+  teams.forEach((t,i)=>{document.getElementById("score"+i).innerText=t.score;});
+}
+
+function showAnswer(){
+  playSound("soundAnswer");
+  document.getElementById("answer").style.display="block";
+}
+
+function correctAnswer(){
+  playSound("soundCorrect");
+  teams[currentTeam].score++;
+  updateScores();
+  document.getElementById("question").innerHTML+="<br>✅ إجابة صحيحة!";
+  setTimeout(()=>{nextTurn();nextQuestion();},1200);
+}
+
+function wrongAnswer(){
+  playSound("soundWrong");
+  document.getElementById("question").innerHTML+="<br>❌ إجابة خاطئة!";
+  setTimeout(()=>{nextTurn();nextQuestion();},1200);
+}
+
+function nextTurn(){currentTeam=(currentTeam+1)%teams.length;}
+
+function nextQuestion(){
+  clearInterval(timer);
+  current++;
+  if(current>=questions.length){showResult();return;}
+  let q=questions[current];
+  const qElem=document.getElementById("question");
+  qElem.innerText=`[${q.category}] ${q.q}`;
+  document.getElementById("answer").innerText="الإجابة: "+q.a;
+  document.getElementById("answer").style.display="none";
+  document.getElementById("turn").innerHTML=`🎯 دور <strong>${teams[currentTeam].name}</strong>`;
+  timeLeft=10;
+  document.getElementById("time").innerText=timeLeft;
+  playSound("soundStart");
+  startTimer();
+}
+
+function startTimer(){
+  timer=setInterval(()=>{
+    timeLeft--;
+    document.getElementById("time").innerText=timeLeft;
+    if(timeLeft<=0){
+      clearInterval(timer);
+      let beep=new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+      beep.play();
+      document.body.style.background="radial-gradient(circle,#ff0000,#240046)";
+      setTimeout(()=>{document.body.style.background="radial-gradient(circle at center,#240046,#3a0ca3,#7209b7)";},1500);
+      nextTurn();
+      setTimeout(()=>{nextQuestion();},2000);
+    }
+  },1000);
+}
+
+function showResult(){
+  clearInterval(timer);
+  const sorted=[...teams].sort((a,b)=>b.score-a.score);
+  const maxScore=sorted[0].score;
+  const winners=sorted.filter(t=>t.score===maxScore);
+  const isTie=winners.length>1;
+
+  const res=document.getElementById("result");
+  res.style.display="block";
+  res.innerHTML=`<div id="resHeader" style="font-size:2.2em;"></div>
+  <div style='margin-top:15px;font-size:1.5em;'>${sorted.map(t=>`${t.name}: ${t.score} نقطة`).join("<br>")}</div>
+  <div id="resBtns" style="margin-top:20px;"></div>`;
+  const header=document.getElementById("resHeader");
+  const btns=document.getElementById("resBtns");
+
+  if(isTie){
+    header.innerHTML=`🤝 اللعبة انتهت بالتعادل بين: <strong>${winners.map(w=>w.name).join(" 🤝 ")}</strong>`;
+    const tieBtn=document.createElement("button");
+    tieBtn.textContent="🎯 جولة فاصلة";
+    btns.appendChild(tieBtn);
+    tieBtn.addEventListener("click",()=>startTiebreaker(winners.map(w=>w.name)));
+  }else{
+    header.innerHTML=`🥇 الفائز هو <strong>${winners[0].name}</strong> بـ ${winners[0].score} نقطة!`;
+    btns.innerHTML=`<button onclick="location.reload()">🔁 إعادة اللعب</button>`;
+  }
+  playSound("soundWin");
+}
+
+// 🎯 الجولة الفاصلة (نسخة محسّنة بالكامل)
+function startTiebreaker(tieNames) {
+  document.getElementById("result").style.display = "none";
+  playSound("soundStart");
+
+  const tieDataEl = document.getElementById("tieBreakerData");
+  if (!tieDataEl) {
+    alert("⚠️ مفقود: قائمة أسئلة الجولة الفاصلة tieBreakerData");
+    return;
+  }
+
+  const tieQuestions = JSON.parse(tieDataEl.textContent);
+  const usedQuestions = new Set();
+
+  // الاقتصار على الفرق المتعادلة
+  teams = teams.filter(t => tieNames.includes(t.name));
+  currentTeam = 0;
+
+  function showTiebreakerQuestion() {
+    clearInterval(timer);
+    document.body.style.background =
+      "radial-gradient(circle, #ffae00, #ff0000, #240046)";
+
+    // اختيار سؤال جديد غير مكرر
+    const remaining = tieQuestions.filter((_, i) => !usedQuestions.has(i));
+    if (remaining.length === 0) {
+      alert("انتهت جميع أسئلة الجولة الفاصلة 😅");
+      return;
+    }
+    const randomIndex = Math.floor(Math.random() * remaining.length);
+    const qIndex = tieQuestions.indexOf(remaining[randomIndex]);
+    usedQuestions.add(qIndex);
+    const q = tieQuestions[qIndex];
+
+    document.getElementById("game").style.display = "block";
+    document.getElementById("question").innerHTML = `
+      <span style='color:#ffd700; text-shadow:0 0 20px #ff0000; font-size:1.2em;'>
+        🎯 [الجولة الفاصلة الذهبية]
+      </span><br>${q.q}
+    `;
+    document.getElementById("answer").innerText = "الإجابة: " + q.a;
+    document.getElementById("answer").style.display = "none";
+    document.getElementById("turn").innerHTML = `🔥 دور <strong>${teams[currentTeam].name}</strong>`;
+
+    timeLeft = 10;
+    document.getElementById("time").innerText = timeLeft;
+    document.getElementById("time").classList.remove("timeout");
+    startTimer();
+
+    // دالة عند الإجابة الصحيحة ✅
+    window.correctAnswer = function () {
+      clearInterval(timer);
+      playSound("soundCorrect");
+      teams[currentTeam].score++;
+      updateScores();
+      document.getElementById("question").innerHTML += "<br>✅ إجابة صحيحة!";
+      setTimeout(() => announceFinalWinner(teams[currentTeam]), 1000);
+    };
+
+    // دالة عند الإجابة الخاطئة ❌
+    window.wrongAnswer = function () {
+      clearInterval(timer);
+      playSound("soundWrong");
+      document.getElementById("question").innerHTML += "<br>❌ إجابة خاطئة!";
+      currentTeam = (currentTeam + 1) % teams.length;
+
+      if (currentTeam === 0) {
+        // كل الفرق أخطأت → سؤال جديد
+        setTimeout(() => {
+          document.getElementById("question").innerHTML =
+            "😮 لم يجب أحد إجابة صحيحة!<br>🔁 اختيار سؤال جديد...";
+          setTimeout(() => showTiebreakerQuestion(), 2000);
+        }, 1200);
+      } else {
+        // ينتقل الدور للفريق التالي مباشرة
+        setTimeout(() => {
+          document.getElementById("turn").innerHTML =
+            `🔥 دور <strong>${teams[currentTeam].name}</strong>`;
+          timeLeft = 10;
+          document.getElementById("time").innerText = timeLeft;
+          startTimer();
+        }, 1200);
+      }
+    };
+  }
+
+  showTiebreakerQuestion();
+}
+function announceFinalWinner(winnerTeam) {
+  clearInterval(timer);
+  document.getElementById("result").style.display = "block";
+  document.getElementById("result").innerHTML = `
+    <div style='font-size:2.5em;color:#ffd700;text-shadow:0 0 20px #ffb703;animation:fadeIn 1.5s ease;'>
+      🏁 بعد الجولة الفاصلة، الفائز النهائي هو <strong>${winnerTeam.name}</strong> 🎉
+    </div>
+    <br><button onclick="location.reload()">🔁 إعادة اللعب</button>
+  `;
+  playSound("soundWin");
+}
+</script>
+</body>
+</html>
